@@ -1,0 +1,32 @@
+name: Scheduled Artifact Sweep
+on:
+  schedule:
+    # Runs every hour (adjust as needed)
+    - cron: '0 * * * *' 
+  workflow_dispatch: # For testing purposes
+
+jobs:
+  sweep-artifacts:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write # Required to delete artifacts
+    steps:
+      - name: Purge Old Artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner,
+              repo,
+            });
+
+            for (const artifact of artifacts.data.artifacts) {
+              console.log(`Sweeping artifact: ${artifact.name} (ID: ${artifact.id})`);
+              await github.rest.actions.deleteArtifact({
+                owner,
+                repo,
+                artifact_id: artifact.id,
+              });
+            }
